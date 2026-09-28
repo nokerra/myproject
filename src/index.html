@@ -7,11 +7,10 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-brand" data-view="home">
+  <nav class="navbar">
+    <div class="nav-brand" id="navBrand">
       <span class="material-symbols-rounded nav-icon">garage</span>
-      <span class="brand-title">База клиентов</span>
+      <span>База клиентов</span>
     </div>
     <div class="nav-actions">
       <button class="nav-btn" id="navSearchBtn">
@@ -23,45 +22,43 @@
         Клиенты
         <span class="badge" id="clientCount">0</span>
       </button>
+      <button class="nav-btn" id="navBackupBtn" title="Резервная копия">
+        <span class="material-symbols-rounded">save</span>
+      </button>
     </div>
   </nav>
 
-  <!-- ============ ГЛАВНАЯ ============ -->
   <main class="page" id="pageHome">
     <div class="home-search">
       <h1 class="home-title">Поиск клиента</h1>
-      <p class="home-sub">По номеру авто, телефону или ФИО</p>
-
+      <p class="home-sub">Номер авто, телефон, ФИО или VIN</p>
       <div class="search-wrap">
         <span class="material-symbols-rounded search-ico">search</span>
         <input type="text" id="mainSearch" class="search-input"
-               placeholder="Спросите что-нибудь про клиента…" autocomplete="off" />
-        <button class="search-clear" id="searchClear" style="display:none" title="Очистить">
+               placeholder="Введите запрос…" autocomplete="off" />
+        <button class="search-clear" id="searchClear" style="display:none">
           <span class="material-symbols-rounded">close</span>
         </button>
       </div>
-
       <div class="search-results" id="searchResults"></div>
     </div>
 
-    <section class="section" id="recentSection">
+    <section class="section">
       <h2 class="section-title">Последние обращения</h2>
       <div class="carousel" id="recentCarousel"></div>
     </section>
 
-    <button class="fab" id="fabAdd" title="Добавить клиента">
+    <button class="fab" id="fabAdd">
       <span class="material-symbols-rounded">person_add</span>
       Добавить клиента
     </button>
   </main>
 
-  <!-- ============ КЛИЕНТЫ ============ -->
   <main class="page" id="pageClients" style="display:none">
     <h1 class="page-title">Клиенты <span class="count" id="clientsTotal">0</span></h1>
     <div class="accordion" id="clientsAccordion"></div>
   </main>
 
-  <!-- ============ СТРАНИЦА КЛИЕНТА ============ -->
   <main class="page page-client" id="pageClient" style="display:none">
     <button class="back-btn" id="backBtn">
       <span class="material-symbols-rounded">arrow_back</span>
@@ -99,20 +96,27 @@
     </div>
   </main>
 
-  <!-- Модалка -->
   <div class="modal-overlay" id="modalOverlay" style="display:none">
     <div class="modal" id="modalContent"></div>
   </div>
 
-  <!-- Лоадер -->
   <div class="loader-overlay" id="loader">
     <div class="loader-spinner"></div>
   </div>
 
-  <!-- Уведомление об обновлении -->
+  <!-- Плашка обновления -->
   <div class="update-toast" id="updateToast" style="display:none">
-    <div class="update-toast-text" id="updateToastText"></div>
-    <div class="update-toast-actions">
+    <div class="update-toast-content">
+      <div class="update-toast-text" id="updateToastText">Доступно обновление</div>
+
+      <!-- Прогресс-бар (скрыт по умолчанию) -->
+      <div class="update-progress" id="updateProgress" style="display:none">
+        <div class="update-bar"><div class="update-bar-fill" id="updateBarFill"></div></div>
+        <div class="update-progress-info" id="updateProgressInfo">0%</div>
+      </div>
+    </div>
+
+    <div class="update-toast-actions" id="updateActions">
       <button class="btn btn-ghost" id="updateLater">Позже</button>
       <button class="btn btn-primary" id="updateNow">Обновить</button>
     </div>

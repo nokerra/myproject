@@ -1,4 +1,3 @@
-// ==================== Состояние ====================
 let allClients = [];
 let currentClient = null;
 let currentRecords = [];
@@ -36,10 +35,31 @@ function highlight(text, query) {
   if (!query) return escaped;
   const words = query.trim().split(/\s+/).filter(w => w.length >= 2);
   if (!words.length) return escaped;
-  const pattern = words
-    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|');
+  const pattern = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   return escaped.replace(new RegExp(`(${pattern})`, 'gi'), '<mark>$1</mark>');
+}
+
+// Копирование в буфер + всплывающий тост
+function showToast(msg) {
+  let t = $('.toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+async function copyText(text, label) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(`${label} скопирован`);
+  } catch (e) {
+    showToast('Не удалось скопировать');
+  }
 }
 
 // ==================== Навигация ====================
@@ -47,7 +67,6 @@ function showPage(id) {
   $$('.page').forEach(p => p.style.display = 'none');
   $(`#${id}`).style.display = 'block';
 
-  // FAB главной — только на главной, FAB клиента — только на странице клиента
   const fabAdd = $('#fabAdd');
   const fabGroup = $('#fabGroup');
   if (fabAdd) fabAdd.style.display = (id === 'pageHome') ? 'flex' : 'none';
@@ -85,20 +104,13 @@ async function goClient(id) {
 }
 
 // ==================== Лоадер ====================
-function showLoader() {
-  const el = $('#loader');
-  if (el) el.classList.remove('hidden');
-}
-function hideLoader() {
-  const el = $('#loader');
-  if (el) el.classList.add('hidden');
-}
+function showLoader() { const el = $('#loader'); if (el) el.classList.remove('hidden'); }
+function hideLoader() { const el = $('#loader'); if (el) el.classList.add('hidden'); }
 
 // ==================== Главная ====================
 async function loadHomeData() {
-  const visits = await window.api.getRecentVisits(10);
-  recentVisits = visits;
-  renderCarousel(visits);
+  recentVisits = await window.api.getRecentVisits(10);
+  renderCarousel(recentVisits);
 }
 
 function renderCarousel(visits) {
@@ -118,13 +130,12 @@ function renderCarousel(visits) {
       </div>
     </div>
   `).join('');
-
   el.querySelectorAll('.carousel-card').forEach(card => {
     card.addEventListener('click', () => goClient(+card.dataset.clientId));
   });
 }
 
-// ==================== Главный поиск ====================
+// ==================== Поиск ====================
 function initMainSearch() {
   const input = $('#mainSearch');
   const clear = $('#searchClear');
@@ -132,15 +143,12 @@ function initMainSearch() {
   input.addEventListener('input', () => {
     const q = input.value.trim();
     clear.style.display = q ? 'flex' : 'none';
+    if (!q || !fuseClients) { $('#searchResults').innerHTML = ''; return; }
 
-    if (!q || !fuseClients) {
-      $('#searchResults').innerHTML = '';
-      return;
-    }
     const results = fuseClients.search(q).slice(0, 8);
     const el = $('#searchResults');
-    if (results.length === 0) {
-      el.innerHTML = `<div class="empty" style="padding:24px;font-size:15px">Ничего не найдено</div>`;
+    if (!results.length) {
+      el.innerHTML = `<div class="empty" style="padding:24px;font-size:16px">Ничего не найдено</div>`;
       return;
     }
     el.innerHTML = results.map(r => {
@@ -167,7 +175,7 @@ function initMainSearch() {
   });
 }
 
-// ==================== Аккордеон клиентов ====================
+// ==================== Аккордеон ====================
 const RU_LETTERS = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split('');
 
 function renderAccordion() {
@@ -224,27 +232,40 @@ function renderClientHeader() {
     ? '<span class="client-status good">Порядочный</span>'
     : '<span class="client-status bad">Козёл</span>';
 
+  const plateFull = `${c.plate_letters} ${c.plate_region}`;
+
   $('#clientSticky').innerHTML = `
     <div class="client-header">
-      <div class="plate-box">
+      <div class="plate-box" id="plateCopy" title="Скопировать номер">
         <div class="plate-left">${escapeHtml(c.plate_letters)}</div>
         <div class="plate-right">
           <div class="plate-region">${escapeHtml(c.plate_region)}</div>
-          <div class="plate-country">
-            <span>RUS</span>
-            <span class="plate-flag"></span>
-          </div>
+          <div class="plate-country"><span>RUS</span><span class="plate-flag"></span></div>
         </div>
       </div>
       <div class="client-info">
         <div class="client-name">${escapeHtml(c.full_name)} ${st}</div>
         <div class="client-meta">
           ${c.car_brand ? `<span><span class="material-symbols-rounded">directions_car</span>${escapeHtml(c.car_brand)}</span>` : ''}
-          <span><span class="material-symbols-rounded">call</span>${escapeHtml(c.phone)}</span>
+          <span class="copyable" id="phoneCopy" title="Скопировать телефон">
+            <span class="material-symbols-rounded">call</span>
+            ${escapeHtml(c.phone)}
+            <span class="copy-hint">копировать</span>
+          </span>
+          ${c.vin ? `<span class="copyable" id="vinCopy" title="Скопировать VIN">
+            <span class="material-symbols-rounded">fingerprint</span>
+            VIN: ${escapeHtml(c.vin)}
+            <span class="copy-hint">копировать</span>
+          </span>` : ''}
         </div>
       </div>
     </div>
   `;
+
+  // Обработчики копирования
+  $('#plateCopy').addEventListener('click', () => copyText(plateFull, 'Номер'));
+  $('#phoneCopy').addEventListener('click', () => copyText(c.phone, 'Телефон'));
+  if ($('#vinCopy')) $('#vinCopy').addEventListener('click', () => copyText(c.vin, 'VIN'));
 }
 
 async function loadRecords(clientId) {
@@ -253,7 +274,6 @@ async function loadRecords(clientId) {
   fuseRecords = new Fuse(allRecordsCache, {
     keys: ['content', 'work_done'],
     threshold: 0.4,
-    includeScore: true,
   });
   renderFeed(currentRecords);
   renderRecordsMeta(currentRecords);
@@ -262,19 +282,13 @@ async function loadRecords(clientId) {
 function renderRecordsMeta(records) {
   const visits = records.filter(r => r.type === 'visit').length;
   const notes = records.filter(r => r.type === 'note').length;
-  $('#recordsCount').innerHTML = `
-    Обращений: <strong>${visits}</strong> · Заметок: <strong>${notes}</strong>
-  `;
+  $('#recordsCount').innerHTML = `Обращений: <strong>${visits}</strong> · Заметок: <strong>${notes}</strong>`;
 }
 
 function renderFeed(records, query = '') {
   const feed = $('#recordsFeed');
   if (!records.length) {
-    feed.innerHTML = `
-      <div class="empty">
-        <span class="material-symbols-rounded">inbox</span>
-        <p>${query ? 'Ничего не найдено' : 'Нет записей'}</p>
-      </div>`;
+    feed.innerHTML = `<div class="empty"><span class="material-symbols-rounded">inbox</span><p>${query ? 'Ничего не найдено' : 'Нет записей'}</p></div>`;
     return;
   }
   feed.innerHTML = records.map(r => {
@@ -324,32 +338,28 @@ function renderFeed(records, query = '') {
   });
 }
 
-// ==================== Глубокий поиск по записям ====================
 function initRecordSearch() {
   $('#recordSearch').addEventListener('input', (e) => {
     const q = e.target.value.trim();
     if (!q) { renderFeed(currentRecords); return; }
-    if (!fuseRecords) return;
     const results = fuseRecords.search(q).map(r => r.item);
     renderFeed(results, q);
   });
 }
 
-// ==================== Модальные окна ====================
+// ==================== Модалки ====================
 function openModal(html) {
   $('#modalContent').innerHTML = html;
   $('#modalOverlay').style.display = 'flex';
 }
-
 function closeModal() {
   $('#modalOverlay').style.display = 'none';
   $('#modalContent').innerHTML = '';
 }
 
-// ---------- Клиент ----------
 function openClientForm(client = null) {
   const isEdit = !!client;
-  const c = client || { plate_letters: '', plate_region: '', full_name: '', car_brand: '', phone: '+7', is_good: 1 };
+  const c = client || { plate_letters: '', plate_region: '', full_name: '', car_brand: '', vin: '', phone: '+7', is_good: 1 };
   openModal(`
     <h2>${isEdit ? 'Редактировать клиента' : 'Новый клиент'}</h2>
     <form id="clientForm">
@@ -372,6 +382,10 @@ function openClientForm(client = null) {
         <input type="text" id="fBrand" value="${escapeHtml(c.car_brand)}" placeholder="Toyota Camry" />
       </div>
       <div class="field">
+        <label>VIN-код</label>
+        <input type="text" id="fVin" value="${escapeHtml(c.vin || '')}" placeholder="17 символов" maxlength="17" />
+      </div>
+      <div class="field">
         <label>Телефон</label>
         <input type="text" id="fPhone" value="${escapeHtml(c.phone)}" placeholder="+7 (999) 123-45-67" required />
       </div>
@@ -389,19 +403,31 @@ function openClientForm(client = null) {
     </form>
   `);
 
+  // Номер авто: буквы (лат+кир) + цифры, авто-капс
   const plateInput = $('#fPlate');
   plateInput.addEventListener('input', () => {
-    plateInput.value = plateInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    plateInput.value = plateInput.value.toUpperCase().replace(/[^A-ZА-Я0-9]/g, '');
   });
+
+  // Регион: только цифры
   $('#fRegion').addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/\D/g, '');
   });
+
+  // VIN: только латинские буквы и цифры, капс
+  const vinInput = $('#fVin');
+  vinInput.addEventListener('input', () => {
+    vinInput.value = vinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  });
+
+  // Телефон
   const phoneInput = $('#fPhone');
   phoneInput.addEventListener('input', () => {
     if (!phoneInput.value.startsWith('+7')) {
       phoneInput.value = '+7' + phoneInput.value.replace(/\D/g, '').slice(1);
     }
   });
+
   $('#fGood').addEventListener('change', (e) => {
     $('#switchLabel').textContent = e.target.checked ? 'Порядочный' : 'Козёл';
   });
@@ -409,10 +435,11 @@ function openClientForm(client = null) {
   $('#clientForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {
-      plate_letters: $('#fPlate').value.trim().toUpperCase(),
+      plate_letters: plateInput.value.trim().toUpperCase(),
       plate_region: $('#fRegion').value.trim(),
       full_name: $('#fName').value.trim(),
       car_brand: $('#fBrand').value.trim(),
+      vin: vinInput.value.trim().toUpperCase(),
       phone: phoneInput.value.trim(),
       is_good: $('#fGood').checked ? 1 : 0,
     };
@@ -433,7 +460,6 @@ function openClientForm(client = null) {
   });
 }
 
-// ---------- Заметка ----------
 function openNoteForm(note = null) {
   const isEdit = !!note;
   openModal(`
@@ -467,7 +493,6 @@ function openNoteForm(note = null) {
   });
 }
 
-// ---------- Обращение ----------
 function openVisitForm(visit = null) {
   const isEdit = !!visit;
   const v = visit || { mileage: '', work_done: '', visit_date: todayISO(), price: '' };
@@ -525,7 +550,7 @@ function openEditRecord(id, type) {
 function openDeleteRecord(id) {
   openModal(`
     <h2>Удалить запись?</h2>
-    <p style="color:var(--text2);font-size:14px;margin-bottom:8px">Это действие нельзя отменить.</p>
+    <p style="color:var(--text2);font-size:16px;margin-bottom:12px">Это действие нельзя отменить.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="modalCancel">Отмена</button>
       <button class="btn btn-danger" id="confirmDelete">Удалить</button>
@@ -542,7 +567,7 @@ function openDeleteRecord(id) {
 function openDeleteClient() {
   openModal(`
     <h2>Удалить клиента?</h2>
-    <p style="color:var(--text2);font-size:14px;margin-bottom:8px">
+    <p style="color:var(--text2);font-size:16px;margin-bottom:12px">
       Все обращения и заметки этого клиента будут безвозвратно удалены.
     </p>
     <label class="checkbox-row">
@@ -566,11 +591,50 @@ function openDeleteClient() {
   });
 }
 
+// ==================== Резервная копия ====================
+function openBackupDialog() {
+  openModal(`
+    <h2>Резервная копия</h2>
+    <p style="color:var(--text2);font-size:16px;margin-bottom:24px;line-height:1.6">
+      База хранится только на вашем компьютере. Рекомендую сохранять копию
+      на флешку или в облако раз в неделю.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+      <button class="btn btn-primary" id="backupSave" style="justify-content:flex-start">
+        <span class="material-symbols-rounded">save</span>
+        Сохранить копию базы
+      </button>
+      <button class="btn btn-ghost" id="backupRestore" style="justify-content:flex-start;border:1px solid var(--border)">
+        <span class="material-symbols-rounded">restore</span>
+        Восстановить из копии
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modalCancel">Закрыть</button>
+    </div>
+  `);
+  $('#modalCancel').addEventListener('click', closeModal);
+  $('#backupSave').addEventListener('click', async () => {
+    const res = await window.api.backupDb();
+    if (res.ok) { closeModal(); showToast('Копия сохранена'); }
+    else if (res.error) showToast('Ошибка: ' + res.error);
+  });
+  $('#backupRestore').addEventListener('click', async () => {
+    const res = await window.api.restoreDb();
+    if (res.ok) {
+      closeModal();
+      await refreshAll();
+      goHome();
+      showToast('База восстановлена');
+    } else if (res.error) showToast('Ошибка: ' + res.error);
+  });
+}
+
 // ==================== Обновление данных ====================
 async function refreshAll() {
   allClients = await window.api.getClients();
   fuseClients = new Fuse(allClients, {
-    keys: ['plate_letters', 'plate_region', 'full_name', 'phone'],
+    keys: ['plate_letters', 'plate_region', 'full_name', 'phone', 'vin', 'car_brand'],
     threshold: 0.35,
     ignoreLocation: true,
   });
@@ -582,41 +646,76 @@ async function refreshAll() {
 
 // ==================== Обновления ====================
 function initUpdates() {
-  window.api.onUpdateAvailable((info) => {
-    $('#updateToastText').textContent = `Доступно обновление v${info.version}. Установить?`;
-    $('#updateToast').style.display = 'flex';
+  const toast = $('#updateToast');
+  const text = $('#updateToastText');
+  const actions = $('#updateActions');
+  const progress = $('#updateProgress');
+  const barFill = $('#updateBarFill');
+  const info = $('#updateProgressInfo');
+
+  window.api.onUpdateAvailable((infoData) => {
+    text.textContent = `Доступно обновление v${infoData.version}`;
+    actions.style.display = 'flex';
+    progress.style.display = 'none';
+    barFill.style.width = '0%';
+    info.textContent = '0%';
+    toast.style.display = 'flex';
   });
+
   $('#updateLater').addEventListener('click', () => {
-    $('#updateToast').style.display = 'none';
+    toast.style.display = 'none';
   });
-  $('#updateNow').addEventListener('click', () => {
-    window.api.downloadUpdate();
-    $('#updateToastText').textContent = 'Загрузка обновления…';
+
+  $('#updateNow').addEventListener('click', async () => {
+    // Скрываем кнопки, показываем прогресс
+    actions.style.display = 'none';
+    progress.style.display = 'block';
+    text.textContent = 'Загрузка обновления…';
+    info.textContent = '0%';
+    await window.api.downloadUpdate();
   });
+
+  window.api.onUpdateProgress((p) => {
+    const percent = Math.max(0, Math.min(100, p.percent || 0));
+    barFill.style.width = percent.toFixed(1) + '%';
+    const mb = (p.transferred / 1024 / 1024).toFixed(1);
+    const totalMb = (p.total / 1024 / 1024).toFixed(1);
+    const speed = (p.bytesPerSecond / 1024).toFixed(0);
+    info.textContent = `${percent.toFixed(1)}% · ${mb} / ${totalMb} МБ · ${speed} КБ/с`;
+  });
+
+  window.api.onUpdateError((msg) => {
+    text.textContent = 'Ошибка загрузки. Проверьте интернет.';
+    info.textContent = msg;
+    actions.style.display = 'flex';
+    // Показать кнопку "Повторить"
+    $('#updateNow').textContent = 'Повторить';
+  });
+
   window.api.onUpdateDownloaded(() => {
-    window.api.installUpdate();
+    text.textContent = 'Обновление загружено. Устанавливаю…';
+    barFill.style.width = '100%';
+    info.textContent = 'Готово';
+    setTimeout(() => window.api.installUpdate(), 800);
   });
 }
 
 // ==================== Инициализация ====================
 document.addEventListener('DOMContentLoaded', async () => {
   showLoader();
-
-  const safetyTimer = setTimeout(() => {
-    console.warn('Инициализация долгая, принудительно скрываю лоадер');
-    hideLoader();
-  }, 8000);
+  const safetyTimer = setTimeout(hideLoader, 10000);
 
   try {
     if (!window.api) throw new Error('window.api не определён');
-    if (typeof Fuse === 'undefined') throw new Error('Fuse не загружен — проверь <script> в index.html');
+    if (typeof Fuse === 'undefined') throw new Error('Fuse не загружен');
 
     await refreshAll();
     await loadHomeData();
 
-    $('.nav-brand').addEventListener('click', goHome);
+    $('#navBrand').addEventListener('click', goHome);
     $('#navSearchBtn').addEventListener('click', goHome);
     $('#navClientsBtn').addEventListener('click', goClients);
+    $('#navBackupBtn').addEventListener('click', openBackupDialog);
     $('#backBtn').addEventListener('click', goHome);
 
     initMainSearch();
@@ -632,21 +731,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (e.target === $('#modalOverlay')) closeModal();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && $('#modalOverlay').style.display === 'flex') closeModal();
+      if (e.key === 'Escape') closeModal();
     });
 
-    // Скрываем FAB клиента, пока мы не на странице клиента
     showPage('pageHome');
-
     initUpdates();
   } catch (err) {
-    console.error('ОШИБКА ИНИЦИАЛИЗАЦИИ:', err);
+    console.error('ОШИБКА:', err);
     const overlay = $('#loader');
     if (overlay) {
       overlay.innerHTML = `
-        <div style="padding:40px;max-width:800px;font-family:system-ui;color:#e9ecf2">
-          <h1 style="color:#ff4d5e;margin-bottom:16px">Ошибка инициализации</h1>
-          <pre style="color:#ff8a95;white-space:pre-wrap;font-size:14px">${err.stack || err.message}</pre>
+        <div style="padding:40px;max-width:800px;font-family:system-ui;color:#e8ebef">
+          <h1 style="color:#e2504f;margin-bottom:16px">Ошибка</h1>
+          <pre style="color:#ff8a95;white-space:pre-wrap">${err.stack || err.message}</pre>
         </div>
       `;
     }
