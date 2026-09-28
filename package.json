@@ -1,6 +1,6 @@
 {
   "name": "client-base",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "База клиентов",
   "main": "main.js",
   "author": "nokerra",
