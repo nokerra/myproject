@@ -7,9 +7,11 @@ directories:
   buildResources: build
 
 files:
-  - "**/*"
+  - "main.js"
+  - "preload.js"
+  - "src/**/*"
+  - "package.json"
   - "!dist/**"
-  - "!node_modules/.cache/**"
 
 asarUnpack:
   - "node_modules/better-sqlite3/**"

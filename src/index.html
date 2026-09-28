@@ -22,6 +22,9 @@
         Клиенты
         <span class="badge" id="clientCount">0</span>
       </button>
+      <button class="nav-btn" id="navExcelBtn" title="Экспорт в Excel">
+        <span class="material-symbols-rounded">table_view</span>
+      </button>
       <button class="nav-btn" id="navBackupBtn" title="Резервная копия">
         <span class="material-symbols-rounded">save</span>
       </button>
@@ -104,18 +107,14 @@
     <div class="loader-spinner"></div>
   </div>
 
-  <!-- Плашка обновления -->
   <div class="update-toast" id="updateToast" style="display:none">
     <div class="update-toast-content">
       <div class="update-toast-text" id="updateToastText">Доступно обновление</div>
-
-      <!-- Прогресс-бар (скрыт по умолчанию) -->
       <div class="update-progress" id="updateProgress" style="display:none">
         <div class="update-bar"><div class="update-bar-fill" id="updateBarFill"></div></div>
         <div class="update-progress-info" id="updateProgressInfo">0%</div>
       </div>
     </div>
-
     <div class="update-toast-actions" id="updateActions">
       <button class="btn btn-ghost" id="updateLater">Позже</button>
       <button class="btn btn-primary" id="updateNow">Обновить</button>

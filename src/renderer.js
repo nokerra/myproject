@@ -39,7 +39,6 @@ function highlight(text, query) {
   return escaped.replace(new RegExp(`(${pattern})`, 'gi'), '<mark>$1</mark>');
 }
 
-// Копирование в буфер + всплывающий тост
 function showToast(msg) {
   let t = $('.toast');
   if (!t) {
@@ -262,7 +261,6 @@ function renderClientHeader() {
     </div>
   `;
 
-  // Обработчики копирования
   $('#plateCopy').addEventListener('click', () => copyText(plateFull, 'Номер'));
   $('#phoneCopy').addEventListener('click', () => copyText(c.phone, 'Телефон'));
   if ($('#vinCopy')) $('#vinCopy').addEventListener('click', () => copyText(c.vin, 'VIN'));
@@ -403,31 +401,23 @@ function openClientForm(client = null) {
     </form>
   `);
 
-  // Номер авто: буквы (лат+кир) + цифры, авто-капс
   const plateInput = $('#fPlate');
   plateInput.addEventListener('input', () => {
     plateInput.value = plateInput.value.toUpperCase().replace(/[^A-ZА-Я0-9]/g, '');
   });
-
-  // Регион: только цифры
   $('#fRegion').addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/\D/g, '');
   });
-
-  // VIN: только латинские буквы и цифры, капс
   const vinInput = $('#fVin');
   vinInput.addEventListener('input', () => {
     vinInput.value = vinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   });
-
-  // Телефон
   const phoneInput = $('#fPhone');
   phoneInput.addEventListener('input', () => {
     if (!phoneInput.value.startsWith('+7')) {
       phoneInput.value = '+7' + phoneInput.value.replace(/\D/g, '').slice(1);
     }
   });
-
   $('#fGood').addEventListener('change', (e) => {
     $('#switchLabel').textContent = e.target.checked ? 'Порядочный' : 'Козёл';
   });
@@ -667,7 +657,6 @@ function initUpdates() {
   });
 
   $('#updateNow').addEventListener('click', async () => {
-    // Скрываем кнопки, показываем прогресс
     actions.style.display = 'none';
     progress.style.display = 'block';
     text.textContent = 'Загрузка обновления…';
@@ -688,7 +677,6 @@ function initUpdates() {
     text.textContent = 'Ошибка загрузки. Проверьте интернет.';
     info.textContent = msg;
     actions.style.display = 'flex';
-    // Показать кнопку "Повторить"
     $('#updateNow').textContent = 'Повторить';
   });
 
@@ -716,6 +704,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('#navSearchBtn').addEventListener('click', goHome);
     $('#navClientsBtn').addEventListener('click', goClients);
     $('#navBackupBtn').addEventListener('click', openBackupDialog);
+    $('#navExcelBtn').addEventListener('click', async () => {
+      const res = await window.api.exportExcel();
+      if (res.ok) showToast('Файл Excel сохранён');
+      else if (res.error) showToast('Ошибка: ' + res.error);
+    });
     $('#backBtn').addEventListener('click', goHome);
 
     initMainSearch();

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('api', {
 
   backupDb: () => ipcRenderer.invoke('db:backup'),
   restoreDb: () => ipcRenderer.invoke('db:restore'),
+  exportExcel: () => ipcRenderer.invoke('db:exportExcel'),
 
   onUpdateAvailable: (cb) => ipcRenderer.on('update-available', (_e, info) => cb(info)),
   onUpdateProgress: (cb) => ipcRenderer.on('update-progress', (_e, p) => cb(p)),
