@@ -24,4 +24,5 @@ contextBridge.exposeInMainWorld('api', {
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   checkUpdate: () => ipcRenderer.invoke('update:check'),
+  openDownloadUrl: (url) => ipcRenderer.invoke('update:openDownloadUrl', url),
 });

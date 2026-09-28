@@ -639,32 +639,71 @@ function initUpdates() {
   const toast = $('#updateToast');
   const text = $('#updateToastText');
   const actions = $('#updateActions');
+  const manualActions = $('#updateManualActions');
   const progress = $('#updateProgress');
   const barFill = $('#updateBarFill');
   const info = $('#updateProgressInfo');
 
+  let currentManualUrl = '';
+  let downloadStarted = false;
+  let startTimer = null;
+
   window.api.onUpdateAvailable((infoData) => {
     text.textContent = `Доступно обновление v${infoData.version}`;
     actions.style.display = 'flex';
+    manualActions.style.display = 'none';
     progress.style.display = 'none';
     barFill.style.width = '0%';
     info.textContent = '0%';
     toast.style.display = 'flex';
+    currentManualUrl = infoData.manualUrl || '';
+    downloadStarted = false;
   });
 
   $('#updateLater').addEventListener('click', () => {
     toast.style.display = 'none';
+    if (startTimer) clearTimeout(startTimer);
   });
 
   $('#updateNow').addEventListener('click', async () => {
     actions.style.display = 'none';
     progress.style.display = 'block';
     text.textContent = 'Загрузка обновления…';
-    info.textContent = '0%';
+    info.textContent = 'Ожидание ответа сервера…';
+    downloadStarted = false;
+
+    startTimer = setTimeout(() => {
+      if (downloadStarted) return;
+      console.warn('Загрузка не началась за 10 секунд');
+      showManualDownloadOption();
+    }, 10000);
+
     await window.api.downloadUpdate();
   });
 
+  $('#updateClose').addEventListener('click', () => {
+    toast.style.display = 'none';
+  });
+
+  $('#updateManualBtn').addEventListener('click', async () => {
+    if (!currentManualUrl) {
+      info.textContent = 'Ссылка не найдена';
+      return;
+    }
+    await window.api.openDownloadUrl(currentManualUrl);
+    toast.style.display = 'none';
+  });
+
+  function showManualDownloadOption() {
+    progress.style.display = 'none';
+    manualActions.style.display = 'flex';
+    text.textContent = 'Автозагрузка недоступна. Скачайте вручную:';
+  }
+
   window.api.onUpdateProgress((p) => {
+    downloadStarted = true;
+    if (startTimer) clearTimeout(startTimer);
+
     const percent = Math.max(0, Math.min(100, p.percent || 0));
     barFill.style.width = percent.toFixed(1) + '%';
     const mb = (p.transferred / 1024 / 1024).toFixed(1);
@@ -674,10 +713,9 @@ function initUpdates() {
   });
 
   window.api.onUpdateError((msg) => {
-    text.textContent = 'Ошибка загрузки. Проверьте интернет.';
-    info.textContent = msg;
-    actions.style.display = 'flex';
-    $('#updateNow').textContent = 'Повторить';
+    if (startTimer) clearTimeout(startTimer);
+    showManualDownloadOption();
+    console.error('Update error:', msg);
   });
 
   window.api.onUpdateDownloaded(() => {

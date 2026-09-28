@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
@@ -66,7 +66,6 @@ function initDatabase() {
     db.exec(`ALTER TABLE clients ADD COLUMN vin TEXT DEFAULT ''`);
   } catch (e) { /* уже есть */ }
 
-  // Автобэкап при запуске
   makeAutoBackup();
 }
 
@@ -226,7 +225,6 @@ ipcMain.handle('db:exportExcel', async () => {
       'SELECT * FROM clients ORDER BY full_name COLLATE NOCASE ASC'
     ).all();
 
-    // ---------- Лист 1: Клиенты ----------
     const wsClients = workbook.addWorksheet('Клиенты', {
       views: [{ state: 'frozen', ySplit: 1 }],
     });
@@ -290,7 +288,6 @@ ipcMain.handle('db:exportExcel', async () => {
       col.width = Math.min(max + 4, 40);
     });
 
-    // ---------- Лист 2: Обращения ----------
     const wsRecords = workbook.addWorksheet('Обращения', {
       views: [{ state: 'frozen', ySplit: 1 }],
     });
@@ -345,7 +342,6 @@ ipcMain.handle('db:exportExcel', async () => {
       col.width = Math.min(max + 4, 50);
     });
 
-    // ---------- Лист 3: Итоги ----------
     const wsSummary = workbook.addWorksheet('Итоги');
     wsSummary.columns = [
       { header: 'Показатель', key: 'k', width: 32 },
@@ -386,16 +382,28 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true;
 
   const GITHUB_URL = 'https://github.com/nokerra/myproject/releases/latest/download';
-  const PROXY_URL = 'https://gh-proxy.com/' + GITHUB_URL;
+  const GITHUB_BASE = 'https://github.com/nokerra/myproject/releases/download';
 
   autoUpdater.setFeedURL({ provider: 'generic', url: GITHUB_URL });
 
   autoUpdater.on('update-available', (info) => {
     updateDownloading = false;
+
+    // Собираем прямую ссылку на .exe для ручного скачивания
+    const files = info.files || [];
+    const exeFile = files.find(f => f.url && f.url.endsWith('.exe'));
+    let manualUrl = '';
+
+    if (exeFile) {
+      const fileName = exeFile.url.split('/').pop();
+      manualUrl = `${GITHUB_BASE}/v${info.version}/${fileName}`;
+    }
+
     if (mainWindow) {
       mainWindow.webContents.send('update-available', {
         version: info.version,
         releaseNotes: info.releaseNotes || '',
+        manualUrl: manualUrl,
       });
     }
   });
@@ -425,24 +433,18 @@ function setupAutoUpdater() {
   ipcMain.handle('update:download', async () => {
     if (updateDownloading) return { ok: false };
     updateDownloading = true;
-
-    let switched = false;
-    const watchdog = setTimeout(() => {
-      if (switched || !updateDownloading) return;
-      switched = true;
-      console.warn('Медленно — переключаюсь на прокси');
-      autoUpdater.setFeedURL({ provider: 'generic', url: PROXY_URL });
-      autoUpdater.downloadUpdate().catch(() => {});
-    }, 15000);
-
     try {
-      await autoUpdater.downloadUpdate();
-      clearTimeout(watchdog);
+      autoUpdater.downloadUpdate().catch(() => {});
       return { ok: true };
     } catch (e) {
-      clearTimeout(watchdog);
       return { ok: false, error: e.message };
     }
+  });
+
+  ipcMain.handle('update:openDownloadUrl', async (_e, url) => {
+    if (!url) return false;
+    await shell.openExternal(url);
+    return true;
   });
 
   ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
