@@ -25,7 +25,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
     console.error('did-fail-load:', code, desc);
