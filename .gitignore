@@ -1,0 +1,30 @@
+# Зависимости
+node_modules/
+
+# Сборки
+dist/
+out/
+
+# Логи
+*.log
+npm-debug.log*
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Electron-builder
+*.blockmap
+
+# Локальная БД (на всякий случай — она вообще в userData, но вдруг)
+*.db
+*.db-wal
+*.db-shm
+
+# Переменные окружения
+.env
+.env.local

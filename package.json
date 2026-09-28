@@ -1,0 +1,24 @@
+{
+  "name": "client-base",
+  "version": "1.0.0",
+  "description": "База клиентов",
+  "main": "main.js",
+  "author": "nokerra",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "build": "electron-builder --win",
+    "build:portable": "electron-builder --win portable",
+    "dist": "electron-builder --win nsis"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.0.0",
+    "electron-updater": "^6.3.0",
+    "fuse.js": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.0.0"
+  }
+}

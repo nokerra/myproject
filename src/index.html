@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>База клиентов</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-brand" data-view="home">
+      <span class="material-symbols-rounded nav-icon">garage</span>
+      <span class="brand-title">База клиентов</span>
+    </div>
+    <div class="nav-actions">
+      <button class="nav-btn" id="navSearchBtn">
+        <span class="material-symbols-rounded">search</span>
+        Поиск
+      </button>
+      <button class="nav-btn" id="navClientsBtn">
+        <span class="material-symbols-rounded">group</span>
+        Клиенты
+        <span class="badge" id="clientCount">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ============ ГЛАВНАЯ ============ -->
+  <main class="page" id="pageHome">
+    <div class="home-search">
+      <h1 class="home-title">Поиск клиента</h1>
+      <p class="home-sub">По номеру авто, телефону или ФИО</p>
+
+      <div class="search-wrap">
+        <span class="material-symbols-rounded search-ico">search</span>
+        <input type="text" id="mainSearch" class="search-input"
+               placeholder="Спросите что-нибудь про клиента…" autocomplete="off" />
+        <button class="search-clear" id="searchClear" style="display:none" title="Очистить">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+
+      <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <section class="section" id="recentSection">
+      <h2 class="section-title">Последние обращения</h2>
+      <div class="carousel" id="recentCarousel"></div>
+    </section>
+
+    <button class="fab" id="fabAdd" title="Добавить клиента">
+      <span class="material-symbols-rounded">person_add</span>
+      Добавить клиента
+    </button>
+  </main>
+
+  <!-- ============ КЛИЕНТЫ ============ -->
+  <main class="page" id="pageClients" style="display:none">
+    <h1 class="page-title">Клиенты <span class="count" id="clientsTotal">0</span></h1>
+    <div class="accordion" id="clientsAccordion"></div>
+  </main>
+
+  <!-- ============ СТРАНИЦА КЛИЕНТА ============ -->
+  <main class="page page-client" id="pageClient" style="display:none">
+    <button class="back-btn" id="backBtn">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Назад
+    </button>
+
+    <div class="client-sticky" id="clientSticky"></div>
+
+    <div class="client-toolbar">
+      <div class="client-search-wrap">
+        <span class="material-symbols-rounded">search</span>
+        <input type="text" id="recordSearch" class="record-search-input"
+               placeholder="Поиск по обращениям и заметкам" autocomplete="off" />
+      </div>
+      <button class="btn-icon" id="btnEditClient" title="Редактировать">
+        <span class="material-symbols-rounded">edit</span>
+      </button>
+      <button class="btn-icon danger" id="btnDeleteClient" title="Удалить">
+        <span class="material-symbols-rounded">delete</span>
+      </button>
+    </div>
+
+    <div class="records-meta" id="recordsCount"></div>
+    <div class="feed" id="recordsFeed"></div>
+
+    <div class="fab-group" id="fabGroup">
+      <button class="fab fab-sm fab-note" id="fabNote">
+        <span class="material-symbols-rounded">sticky_note_2</span>
+        Заметка
+      </button>
+      <button class="fab fab-sm fab-visit" id="fabVisit">
+        <span class="material-symbols-rounded">build</span>
+        Обращение
+      </button>
+    </div>
+  </main>
+
+  <!-- Модалка -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <!-- Лоадер -->
+  <div class="loader-overlay" id="loader">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- Уведомление об обновлении -->
+  <div class="update-toast" id="updateToast" style="display:none">
+    <div class="update-toast-text" id="updateToastText"></div>
+    <div class="update-toast-actions">
+      <button class="btn btn-ghost" id="updateLater">Позже</button>
+      <button class="btn btn-primary" id="updateNow">Обновить</button>
+    </div>
+  </div>
+
+  <script src="../node_modules/fuse.js/dist/fuse.min.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
